@@ -1,2 +1,2 @@
 # pulsar
-Mood of your platform
+Mood of your platform.
