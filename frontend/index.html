@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+    <title>Pulsar Project</title>
+  </head>
+  <body bgcolor="#3C3C3B">
+<svg width="720" height="120">
+</svg>
+<script type="text/javascript">
+/*
+  Note(sam): Fugly code POC shall not be reused :p
+*/
+
+var uriTarget = "pulsar.corsair.space";
+
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+var svg = d3.select("svg")
+  .attr("width", x - 20)
+  .attr("height", y - 20)
+  .append("g");
+
+//--------------------------------Params Extractor -----------------
+
+function getParameterByName(name, default_) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results === null ? default_ : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+var token = getParameterByName("token", "1b8463c5bcf1afef55874524157a91dc22576b6e");
+var groupBy = getParameterByName("groupBy", "10m");
+var past = getParameterByName("past", "8h");
+
+//--------------------------------Pulsar Area ---------------------
+
+function generateNewPulsar(pulsar_) {
+  var cx = x * pulsar_.cx;
+  var cy = y * pulsar_.cy;
+  if (cx < pulsarSize) {
+    cx += pulsarSize;
+  }
+  else if (cx > x - pulsarSize) {
+    cx -= pulsarSize;
+  }
+  if (cy < pulsarSize) {
+    cy += pulsarSize;
+  }
+  else if (cy > y - (pulsarSize + graphSize + padding)) {
+    cy -= (pulsarSize + graphSize + padding);
+  }
+
+  var pulsar = svg.append("circle")
+    .attr("cy", cy)
+    .attr("cx", cx)
+    .attr("r", pulsarSize)
+    .attr("fill",  "#3FA2B2");
+  pulsar.client_id = pulsar_.data;
+
+  if (token == "1b8463c5bcf1afef55874524157a91dc22576b6e" && pulsar_.data == getCookie("usr")) {
+      pulsar.attr("fill",  "#c05c4b").on("click", PulseSelf);
+  }
+
+  makePulse(pulsar);
+  return pulsar;
+}
+
+function makePulse(self) {
+  self.transition()
+    .duration(100)
+    .attr("stroke-width", 20)
+    .attr("r", 80)
+    .transition()
+    .duration(300)
+    .attr('stroke-width', 0.5)
+    .attr("r", pulsarSize)
+    .ease("sine");
+}
+
+function pulseIt(pulsar) {
+  for(var i = 0; i < galaxy.length; i++) {
+    if (galaxy[i].client_id == pulsar.data){
+      makePulse(galaxy[i]);
+      return;
+    }
+  }
+  console.log("Spawn new Pulsar:", pulsar.data);
+  galaxy.push(generateNewPulsar(pulsar));
+}
+
+function startWs() {
+  try {
+    var sock = new WebSocket("ws://" + uriTarget + "/sock");
+    console.log("Websocket - status: " + sock.readyState);
+
+    sock.onopen = function(m) {
+      sock.send('{"action":"joingalaxy","data":"' + token + '"}')
+      console.log("CONNECTION opened..." + this.readyState);}
+    sock.onmessage = function(m) {
+      console.log(m.data);
+      var _event = JSON.parse(atob(m.data.split('"').join('')));
+      console.log(_event);
+      if (_event.action == "pulse") {
+        pulseIt(_event);
+      }
+    }
+    sock.onerror = function(m) {
+      console.log("Error occured sending..." + m.data);
+    }
+    sock.onclose = function(m) { 
+      console.log("Disconnected - status " + this.readyState);
+      setTimeout(function(){startWs();}, 5000);
+    }
+  } catch(exception) {
+    console.log(exception);
+  } 
+}
+
+var galaxy = [];
+var pulsarSize = 50;
+
+var galaxy_name = "";
+var text_events = svg.append("text");
+var text_name = svg.append("text");
+var text_pulsar = svg.append("text");
+var text_aggregate = svg.append("text");
+
+function refreshText(vak) {
+text_name
+  .attr("x", 0)
+  .attr("y", 10)
+  .text("Galaxy  : " + galaxy_name)
+  .attr("font-family", "sans-serif")
+  .attr("font-size", "15px")
+  .attr("fill", '#3FA2B2');
+
+text_events
+  .attr("x", 0)
+  .attr("y", 30)
+  .text("Events  : " + vak)
+  .attr("font-family", "sans-serif")
+  .attr("font-size", "15px")
+  .attr("fill", '#3FA2B2');
+
+text_pulsar
+  .attr("x", 0)
+  .attr("y", 50)
+  .text("Pulsars: " + galaxy.length)
+  .attr("font-family", "sans-serif")
+  .attr("font-size", "15px")
+  .attr("fill", '#3FA2B2');
+
+text_aggregate
+  .attr("x", x / 2 - 50)
+  .attr("y", 10)
+  .text("Past " + past + " grouped by " + groupBy)
+  .attr("font-family", "sans-serif")
+  .attr("font-size", "10px")
+  .attr("fill", '#3FA2B2');
+}
+
+
+function InitPulsarPool() {
+  d3.json(
+    "http://" + uriTarget + "/stats/load?token=" 
+    + token,
+    function (data) {
+      galaxy_name = data.name;
+      for (pulsar in data.pulsars) {
+          pulseIt(data.pulsars[pulsar]);
+      }
+    }
+  );  
+}
+
+//--------------------------------Bottom Chart Activity time series ----------
+
+var parseDate = d3.time.format("%Y-%m-%d %H:%M").parse;
+
+var padding = 30;
+var graphSize = 60;
+var line = -1;
+var totalHit = 0;
+
+
+function drawActivityTimeSeries() {
+  d3.json("http://" + uriTarget + "/stats?token=" + token + "&groupBy=" + groupBy + "&past=" + past, function (data) {
+      if (data === null) {
+        return;
+      }
+      console.log('Data received...');
+      var xRange = d3.scale.linear().range([padding, x - padding]).domain([d3.min(data, function(d) {
+        return 0;
+      }), d3.max(data, function(d) {
+        return data.length - 1;
+      })])
+
+      var yRange = d3.scale.linear().range([y - padding, y - (padding + graphSize)]).domain([d3.min(data, function(d) {
+        return 0;
+      }), d3.max(data, function(d) {
+        return d.hit;
+      })])
+      var i = -1;
+      var total = 0;
+      var maxH = 0;
+      var lineFunc = d3.svg.line().x(function(d) {
+        i += 1;
+        return xRange(i);
+      })
+      .y(function(d) {
+        total += d.hit
+        if (d.hit > maxH) {
+          maxH = d.hit;
+        }
+        return yRange(d.hit);
+      })
+      .interpolate('linear');
+
+      if (line != -1) {
+        line.remove();
+      }
+
+      line = svg.append('svg:path')
+      .attr('d', lineFunc(data))
+      .attr('stroke', '#3FA2B2')
+      .attr('stroke-width', 2)
+      .attr('fill', 'none');
+      if (totalHit != total && totalHit != 0) {
+          refreshText(total + " (+" + (total - totalHit) + ")");
+      } else {
+        refreshText(total);  
+      }
+      totalHit = total;
+  });
+}
+
+
+//----- Track Current connection on realm
+var my_rand_id = Math.round(Math.random() * 12000)
+
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + "; " + expires;
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+    }
+    return "";
+}
+
+function PulseSelf() {
+  cookie_uid = getCookie("usr");
+  if (cookie_uid == "") {
+    console.log("Adding track cookie...");
+    setCookie("usr", my_rand_id, 30);
+    cookie_uid = my_rand_id;
+  } else {
+    console.log("Cookie:", cookie_uid);
+  }
+
+  d3.json(
+    "http://" + uriTarget + "/pulse?token=" 
+    + "1b8463c5bcf1afef55874524157a91dc22576b6e"
+    + "&client_id="+cookie_uid,
+    function (data) {}
+  );  
+}
+
+//----HUD Menu
+
+function drawTsHud() {
+  var width = 960,
+    height = 500,
+    radius = Math.min(width, height) / 2;
+
+  var arc = d3.svg.arc()
+      .outerRadius(radius - 10)
+      .innerRadius(radius - 100);
+
+  var pie = d3.layout.pie()
+      .sort(null)
+      .value(function(d) { return d.percent; });
+
+
+  var data = [
+    {percent: 10, text: "1h / 10s", groupBy: "10s", past: "1h"},
+    {percent: 10, text: "4h / 5m", groupBy: "5m", past: "4h"},
+    {percent: 10, text: "8h / 10m", groupBy: "10m", past: "8h"},
+    {percent: 10, text: "12h / 20m", groupBy: "20m", past: "12h"},
+    {percent: 10, text: "48h / 1h", groupBy: "1h", past: "48h"},
+    {percent: 10, text: "1w / 12h", groupBy: "12h", past: "1w"},
+  ];
+
+  var g = svg.selectAll(".arc")
+    .data(pie(data))
+    .enter().append("g")
+    .attr("transform", "translate(" + x/2 + "," + y/2 + ")") 
+    .attr("class", "arc")
+    .on("click", function(d, i) {
+      past = data[i].past;
+      groupBy = data[i].groupBy;
+      InitPulsarPool();
+      startWs();
+      PulseSelf();
+      drawActivityTimeSeries();
+      setInterval(drawActivityTimeSeries, 5000);
+      g.remove();
+      legend.remove();
+    });
+
+  g.append("path")
+    .attr("d", arc)
+    .style("fill", "#3FA2B2");
+
+  g.append("text")
+    .attr("transform", function(d) {
+      return "translate(" + arc.centroid(d) + ")";
+    })
+    .attr("dy", ".35em")
+    .style("text-anchor", "middle")
+    .attr("fill", "#3C3C3B")
+    .text(function(d,i) { return data[i].text; })
+
+
+  var legend = svg.append("text")
+    .attr("x", x/2 - 50)
+    .attr("y", y/2)
+    .text("Past / Aggregate")
+    .attr("font-family", "sans-serif")
+    .attr("font-size", "15px")
+    .attr("fill", '#3FA2B2');
+
+
+}
+
+drawTsHud();
+
+
+</script>
+<style type="text/css">
+.arc {
+  cursor: pointer;
+}
+
+.arc:hover {
+  opacity: .85;
+}
+
+.arc text {
+  font-weight: 300;
+  font-size: 18px;
+  color: #3C3C3B;
+}
+
+</style>
+</body>
+</html>
