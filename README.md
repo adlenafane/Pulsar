@@ -44,7 +44,7 @@ server {
 }
 ```
 
-You can now connect to your front at `http://your-server` to change realm you can use `http://your-server?token=<APPLICATION_TOKEN>
+You can now connect to your front at `http://your-server` to change realm you can use `http://your-server?token=<APPLICATION_TOKEN>`
 
 Configuration File:
 -------------------
