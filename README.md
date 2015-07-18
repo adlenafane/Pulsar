@@ -1,15 +1,48 @@
 # Pulsar
 
-![alt tag](http://corsair.space/pulsar_hud.png)
 ![alt tag](http://corsair.space/pulsar_ds1.png)
 
 The Pulsar project aim to visually render the mood, trend activity of an Application over time. Demo at http://corsair.space (Mood of itself :))
 
-Installation:
+Prerequisite:
 -------------
 
-- InfluxDB
-- Frontend (Serve HTTP)
+- InfluxDB (https://influxdb.com)
+- Golang v1.4+
+
+Installation Backend
+---------------------
+
+Get the repo build, it's ready :)
+
+```
+go get github.com/samuelramond/Pulsar
+go build github.com/samuelramond/Pulsar
+./Pulsar
+```
+
+
+Installation Frontend
+---------------------
+
+Example nginx conf file to serve frontend :)
+
+```
+server {
+	listen 80 default;
+	listen [::]:80 default;
+
+	root /var/www/pulsar/src/github.com/samuelramond/Pulsar/frontend;
+
+	index index.html index.htm;
+
+	server_name _;
+
+	location / {
+		try_files $uri $uri/ =404;
+	}
+}
+```
 
 Configuration File:
 -------------------
@@ -48,15 +81,9 @@ sock.send('{"action":"joingalaxy","data":"33999f3f30f9"}');
 ```
 On first connection you must send the Galaxy you want to join using your APPLICATION_TOKEN.
 
-Usage Frontend
---------------
-
-Host FrontEnd
 
 Philosophy:
 -----------
-
-Simple is best
 
 ```
 GalaxyCluster {
@@ -71,12 +98,15 @@ Pulsar: Single Client
 Nebula: Client Organization/Group
 Galaxy: Application
 
+Images:
+-------
 
-Ex:
+Hud time serie info selector:
+![alt tag](http://corsair.space/pulsar_hud.png)
 
-Application	: ProductStream
-Nebula		: Alkemics
-Pulsars		: ANY_STRING_CLIENT_UNIQ;
+View of a galaxy (RED dot is you)
+![alt tag](http://corsair.space/pulsar_ds1.png)
+
 
 Author:
 -------
