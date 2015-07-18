@@ -321,6 +321,7 @@ function drawTsHud() {
       setInterval(drawActivityTimeSeries, 5000);
       g.remove();
       legend.remove();
+      legend2.remove();
     });
 
   g.append("path")
@@ -345,6 +346,13 @@ function drawTsHud() {
     .attr("font-size", "15px")
     .attr("fill", '#3FA2B2');
 
+  var legend2 = svg.append("text")
+    .attr("x", x/2 - 100)
+    .attr("y", y/2 - 300)
+    .text("Pulsar.")
+    .attr("font-family", "sans-serif")
+    .attr("font-size", "75px")
+    .attr("fill", '#3FA2B2');
 
 }
 
