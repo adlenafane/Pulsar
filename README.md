@@ -1,18 +1,23 @@
-Pulsar
-------
+# Pulsar
 
-The Pulsar project aim to visually render the mood, trend activity of an Application over time.
+![alt tag](http://corsair.space/pulsar_hud.png)
+![alt tag](http://corsair.space/pulsar_ds1.png)
 
-# Installation:
+The Pulsar project aim to visually render the mood, trend activity of an Application over time. Demo at http://corsair.space (Mood of itself :))
+
+Installation:
+-------------
 
 - InfluxDB
 - Frontend (Serve HTTP)
 
-# Configuration File:
+Configuration File:
+-------------------
 
 [] Todo
 
-# Usage Backend:
+Usage Backend:
+--------------
 
 - Emit pulse:
 
@@ -43,11 +48,13 @@ sock.send('{"action":"joingalaxy","data":"33999f3f30f9"}');
 ```
 On first connection you must send the Galaxy you want to join using your APPLICATION_TOKEN.
 
-# Usage Frontend
+Usage Frontend
+--------------
 
 Host FrontEnd
 
-# Philosophy:
+Philosophy:
+-----------
 
 Simple is best
 
@@ -71,7 +78,9 @@ Application	: ProductStream
 Nebula		: Alkemics
 Pulsars		: ANY_STRING_CLIENT_UNIQ;
 
-# Author:
+Author:
+-------
+
 ```
 Samuel RAMOND
 @erazor42
