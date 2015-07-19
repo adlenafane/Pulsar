@@ -135,7 +135,7 @@ func main() {
 	gc.Add(&model.Galaxy{
 		Name:        "GDSN",
 		Description: "Alkemics platform GDSN feed",
-		"b68e070d2e229cd66aca21dd2c4eb488e00d6346",
+		Token:       "b68e070d2e229cd66aca21dd2c4eb488e00d6346",
 	})
 	gc.Add(&model.Galaxy{
 		Name:        "Corsair",
