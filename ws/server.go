@@ -2,8 +2,8 @@ package ws
 
 import (
 	// System
-	"log"
 	"encoding/json"
+	"log"
 
 	// Remote
 	"golang.org/x/net/websocket"
@@ -13,20 +13,20 @@ import (
 )
 
 type DashboardClient struct {
-	ws 			*websocket.Conn
-	Galaxy		*model.Galaxy
+	ws     *websocket.Conn
+	Galaxy *model.Galaxy
 }
 
 type WsServer struct {
-	Gc			*model.GalaxyCluster
-	Clients		map[*DashboardClient]int
+	Gc      *model.GalaxyCluster
+	Clients map[*DashboardClient]int
 }
 
 type ActionMessage struct {
-	Action		string 	`json:"action"`
-	Data		string 	`json:"data"`
-	Cx 			float64 `json:"cx"`
-	Cy 			float64 `json:"cy"`
+	Action string  `json:"action"`
+	Data   string  `json:"data"`
+	Cx     float64 `json:"cx"`
+	Cy     float64 `json:"cy"`
 }
 
 func (this *WsServer) Server(ws *websocket.Conn) {
@@ -66,8 +66,7 @@ func (this *WsServer) ProcessAction(am *ActionMessage, client *DashboardClient) 
 		if client.Galaxy = this.Gc.Find(am.Data); client.Galaxy != nil {
 			log.Println("WsServer: Client joined Galaxy")
 		}
-
-	}	
+	}
 }
 
 func (this *WsServer) BroadcastMessage(cgalaxy *model.Galaxy, cpulsar *model.Pulsar) {
@@ -75,7 +74,7 @@ func (this *WsServer) BroadcastMessage(cgalaxy *model.Galaxy, cpulsar *model.Pul
 	am := ActionMessage{"pulse", cpulsar.ClientId, cpulsar.Cx, cpulsar.Cy}
 	js, err := json.Marshal(am)
 	if err != nil {
-		log.Println("TODO: Handle this")
+		log.Println("WsServer: Unable to marshal message", err.Error())
 		return
 	}
 	for cl, _ := range this.Clients {

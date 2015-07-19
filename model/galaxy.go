@@ -8,11 +8,11 @@ import (
 //-------------------------Galaxy----------------------------------------------
 
 type Galaxy struct {
-	Name		string
-	Description	string
-	Token		string
-	Pulsars		map[string]*Pulsar
-	Nebulas		map[string]*Nebula
+	Name        string
+	Description string
+	Token       string
+	Pulsars     map[string]*Pulsar
+	Nebulas     map[string]*Nebula
 }
 
 func (this *Galaxy) AddPulsar(client_id string) *Pulsar {
@@ -47,7 +47,7 @@ func (this *Galaxy) Find(client_id string, group_id string) (*Pulsar, *Nebula) {
 //-------------------------GalaxyCluster---------------------------------------
 
 type GalaxyCluster struct {
-	galaxies 	map[string]*Galaxy
+	galaxies map[string]*Galaxy
 }
 
 func (this *GalaxyCluster) Add(new_galaxy *Galaxy) {
