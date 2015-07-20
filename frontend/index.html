@@ -41,6 +41,111 @@ var past = getParameterByName("past", "8h");
 
 //--------------------------------Pulsar Area ---------------------
 
+var force;
+var nodes;
+function daForce() {
+
+  console.log("force")
+  var width = x;
+  var height = y - graphSize;
+  nodes = d3.range(galaxy.length + 1).map(function() { return {radius: pulsarSize}; });
+
+  force = d3.layout.force()
+    .gravity(0.05)
+    .charge(function(d, i) { return 0; })
+    .nodes(nodes)
+    .size([width, height]);
+
+force.start()
+
+svg.selectAll("circle")
+    .data(nodes)
+  .enter().append("circle")
+    .attr("r", function(d) { return pulsarSize; })
+    .style("fill", "#3FA2B2");
+
+
+
+force.on("tick", function(e) {
+  var q = d3.geom.quadtree(nodes),
+      i = 0,
+      n = nodes.length;
+
+  while (++i < n) q.visit(collide(nodes[i]));
+
+  svg.selectAll("circle")
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; });
+});
+
+// svg.on("mousemove", function() {
+//   var p1 = d3.mouse(this);
+//   root.px = p1[0];
+//   root.py = p1[1];
+//   force.resume();
+// });
+
+function collide(node) {
+  var r = node.radius + 16,
+      nx1 = node.x - r,
+      nx2 = node.x + r,
+      ny1 = node.y - r,
+      ny2 = node.y + r;
+  return function(quad, x1, y1, x2, y2) {
+    if (quad.point && (quad.point !== node)) {
+      var x = node.x - quad.point.x,
+          y = node.y - quad.point.y,
+          l = Math.sqrt(x * x + y * y),
+          r = node.radius + quad.point.radius;
+      if (l < r) {
+        l = (l - r) / l * .5;
+        node.x -= x *= l;
+        node.y -= y *= l;
+        quad.point.x += x;
+        quad.point.y += y;
+      }
+    }
+    return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+  };
+}
+}
+//  force.charge(function (d, i) { return i ? 0 : -1000}).nodes(nodes).size([x, y - graphSize]).start()
+
+function addCharge(dns) {
+  console.log("adding charge")
+  if (nodes === undefined) {
+    return;
+  }
+  force.charge(function (d, i) { return i != dns ? 0 : -2000}).nodes(nodes).size([x, y - graphSize]).start()
+}
+
+function removeCharge() {
+  console.log("removing charge")
+  if (nodes === undefined) {
+    return;
+  }
+  force.charge(function (d, i) { return 0}).nodes(nodes).size([x, y - graphSize]).start()
+}
+
+function makePulse(self) {
+  for (var i = 0; i < galaxy.length; i++) {
+    if (galaxy[i] == self) {
+      addCharge(i + 1);
+      console.log(i);
+    }
+  }
+  self.transition()
+    .duration(100)
+    .attr("stroke-width", 20)
+    .attr("r", pulsarSize * 2)
+    .transition()
+    .duration(1000)
+    .attr('stroke-width', 0.5)
+    .attr("r", pulsarSize)
+    .ease("sine").each("end", removeCharge);
+}
+
+
 function generateNewPulsar(pulsar_) {
   var cx = x * pulsar_.cx;
   var cy = y * pulsar_.cy;
@@ -72,17 +177,7 @@ function generateNewPulsar(pulsar_) {
   return pulsar;
 }
 
-function makePulse(self) {
-  self.transition()
-    .duration(100)
-    .attr("stroke-width", 20)
-    .attr("r", 80)
-    .transition()
-    .duration(300)
-    .attr('stroke-width', 0.5)
-    .attr("r", pulsarSize)
-    .ease("sine");
-}
+
 
 function pulseIt(pulsar) {
   for(var i = 0; i < galaxy.length; i++) {
@@ -93,6 +188,7 @@ function pulseIt(pulsar) {
   }
   console.log("Spawn new Pulsar:", pulsar.data);
   galaxy.push(generateNewPulsar(pulsar));
+  daForce();
 }
 
 function startWs() {
@@ -124,7 +220,7 @@ function startWs() {
 }
 
 var galaxy = [];
-var pulsarSize = 50;
+var pulsarSize = 20;
 
 var galaxy_name = "";
 var text_events = svg.append("text");
@@ -176,6 +272,7 @@ function InitPulsarPool() {
       for (pulsar in data.pulsars) {
           pulseIt(data.pulsars[pulsar]);
       }
+      daForce();
     }
   );  
 }
