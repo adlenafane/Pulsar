@@ -318,7 +318,7 @@ function drawActivityTimeSeries() {
         }
         return yRange(d.hit);
       })
-      .interpolate('linear');
+      .interpolate('basis');
 
       if (line != -1) {
         line.remove();
